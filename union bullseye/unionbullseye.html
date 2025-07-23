@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Union Game</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #1a002a, #0f0f2f);
+      font-family: 'Press Start 2P', monospace;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game {
+      position: relative;
+      width: 90vmin;
+      height: 90vmin;
+      max-width: 500px;
+      max-height: 500px;
+      background: linear-gradient(to bottom right, #111, #222);
+      border: 3px solid #00ffee;
+      box-shadow: 0 0 20px #00ffee;
+      overflow: hidden;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 12px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 6px 10px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px #00ffee;
+    }
+
+    #gameOver {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 14px;
+      text-align: center;
+      color: #ff3377;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 12px 20px;
+      border: 2px solid #ff3377;
+      border-radius: 10px;
+      display: none;
+      animation: flash 1s infinite;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    #target {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      border: 3px solid transparent;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
+      box-shadow: 0 0 12px 4px #ff00ff;
+      animation: pulse 1.5s infinite alternate;
+    }
+
+    #target img {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 40px;
+      height: 40px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      box-shadow: 0 0 10px 2px #ffffff80;
+    }
+
+    @keyframes pulse {
+      from {
+        box-shadow: 0 0 12px 2px #ff00ff;
+      }
+      to {
+        box-shadow: 0 0 18px 6px #00ffff;
+      }
+    }
+
+    .ball {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      background: linear-gradient(45deg, #00ffcc, #ff00cc);
+      border-radius: 50%;
+      box-shadow: 0 0 10px 2px #fff;
+      animation: spin 0.4s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="score">Score: 0</div>
+    <div id="gameOver">GAME OVER<br><small>Tap to restart</small></div>
+    <div id="target">
+      
+      <img src="target.jpg" alt="Target Image" />
+    </div>
+  </div>
+
+  <script>
+    const game = document.getElementById('game');
+    const targetElem = document.getElementById('target');
+    const scoreElem = document.getElementById('score');
+    const gameOverElem = document.getElementById('gameOver');
+
+    let score = 0;
+    let ball = null;
+    let ballVx = 0, ballVy = 0;
+    let targetVx = 1, targetVy = 1;
+    let targetSpeed = 2;
+    let isGameOver = false;
+
+    function resetGame() {
+      isGameOver = false;
+      score = 0;
+      scoreElem.textContent = 'Score: 0';
+      gameOverElem.style.display = 'none';
+      resetTarget();
+    }
+
+    function resetTarget() {
+      const gw = game.clientWidth;
+      const gh = game.clientHeight;
+      const tw = targetElem.offsetWidth;
+      const th = targetElem.offsetHeight;
+
+      targetElem.style.left = (gw/2 - tw/2) + 'px';
+      targetElem.style.top  = (gh/2 - th/2) + 'px';
+
+      const angle = Math.random() * 2 * Math.PI;
+      targetVx = targetSpeed * Math.cos(angle);
+      targetVy = targetSpeed * Math.sin(angle);
+    }
+
+    function launchBall() {
+      if (ball || isGameOver) return;
+
+      const gw = game.clientWidth;
+      const gh = game.clientHeight;
+
+      ball = document.createElement('div');
+      ball.classList.add('ball');
+      game.appendChild(ball);
+
+      const bw = ball.offsetWidth;
+      const bh = ball.offsetHeight;
+      let ballX = gw/2 - bw/2;
+      let ballY = gh - bh;
+      ball.style.left = ballX + 'px';
+      ball.style.top  = ballY + 'px';
+
+      const tx = parseFloat(targetElem.style.left) + targetElem.offsetWidth/2;
+      const ty = parseFloat(targetElem.style.top) + targetElem.offsetHeight/2;
+      const dx = tx - (ballX + bw/2);
+      const dy = ty - (ballY + bh/2);
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const speed = 5;
+
+      ballVx = (dx / dist) * speed;
+      ballVy = (dy / dist) * speed;
+    }
+
+    function showGameOver() {
+      isGameOver = true;
+      gameOverElem.style.display = 'block';
+      if (ball) {
+        game.removeChild(ball);
+        ball = null;
+      }
+    }
+
+    game.addEventListener('click', () => {
+      if (isGameOver) resetGame();
+      else launchBall();
+    });
+
+    game.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (isGameOver) resetGame();
+      else launchBall();
+    }, { passive: false });
+
+    function animate() {
+      const gw = game.clientWidth;
+      const gh = game.clientHeight;
+
+      if (!isGameOver) {
+        let tx = parseFloat(targetElem.style.left);
+        let ty = parseFloat(targetElem.style.top);
+        tx += targetVx;
+        ty += targetVy;
+
+        if (tx <= 0 || tx + targetElem.offsetWidth >= gw) {
+          targetVx = -targetVx;
+        }
+        if (ty <= 0 || ty + targetElem.offsetHeight >= gh) {
+          targetVy = -targetVy;
+        }
+
+        targetElem.style.left = tx + 'px';
+        targetElem.style.top = ty + 'px';
+
+        if (ball) {
+          let bx = parseFloat(ball.style.left) + ballVx;
+          let by = parseFloat(ball.style.top) + ballVy;
+          ball.style.left = bx + 'px';
+          ball.style.top  = by + 'px';
+
+          const tw = targetElem.offsetWidth;
+          const th = targetElem.offsetHeight;
+          const bxCenter = bx + ball.offsetWidth / 2;
+          const byCenter = by + ball.offsetHeight / 2;
+          const txCenter = tx + tw / 2;
+          const tyCenter = ty + th / 2;
+          const dist = Math.hypot(txCenter - bxCenter, tyCenter - byCenter);
+
+          if (dist < (tw / 2 + ball.offsetWidth / 2)) {
+            game.removeChild(ball);
+            ball = null;
+            score += 5;
+            scoreElem.textContent = 'Score: ' + score;
+
+            targetSpeed *= 1.2;
+            const angle = Math.atan2(targetVy, targetVx);
+            targetVx = Math.cos(angle) * targetSpeed;
+            targetVy = Math.sin(angle) * targetSpeed;
+          } else if (bx < -20 || bx > gw + 20 || by < -20 || by > gh + 20) {
+            showGameOver();
+          }
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    resetGame();
+    animate();
+  </script>
+</body>
+</html>
